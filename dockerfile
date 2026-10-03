@@ -29,8 +29,14 @@ ENV WINEPREFIX="/home/pok/.steam/steam/steamapps/compatdata/2430930/pfx"
 ENV DISPLAY=:0.0
 ENV HEALTHCHECK_PORT=8080
 
-# Install the Linux dependencies required by SteamCMD and the pinned GE-Proton.
+ARG KUBECTL_VERSION=v1.36
+# Install the Linux dependencies required by SteamCMD, kubectl and the pinned GE-Proton.
 RUN set -ex; \
+    mkdir -p -m 755 /etc/apt/keyrings; \
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/${KUBECTL_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg; \
+    chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg; \
+    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${KUBECTL_VERSION}/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list; \
+    chmod 644 /etc/apt/sources.list.d/kubernetes.list; \
     dpkg --add-architecture i386; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
@@ -48,7 +54,9 @@ RUN set -ex; \
     # Add necessary libraries for Wine and VC++
     libldap2:i386 libldap2 libgnutls30:i386 libgnutls30 \
     libxml2:i386 libxml2 libasound2t64:i386 libasound2t64 libpulse0:i386 libpulse0 \
-    libopenal1:i386 libopenal1 libncurses6:i386 libncurses6 winbind; \
+    libopenal1:i386 libopenal1 libncurses6:i386 libncurses6 winbind \
+    # Install kubectl
+    kubectl; \
     sed -i 's/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen; \
     locale-gen en_US.UTF-8; \
     update-locale LANG=en_US.UTF-8; \
